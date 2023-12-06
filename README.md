@@ -1,6 +1,6 @@
 # Gene-MOE
 
-Gene-MOE: A Sparsely Gated Genomic Analysis Framework exploiting Pan-Cancer data
+Gene-MOE: A Sparsely Gated Genomic Analysis Framework exploiting Pan-Cancer data.
 
 ## Gene-MOE Architecture
 
