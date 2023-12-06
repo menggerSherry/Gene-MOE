@@ -42,12 +42,14 @@ def plot_tsne(path,x,filename):
     # print(mid)
     # color=['r' if i==1 else 'b' for i in label]
     label_legend=['real expression','reconstruct expression' ]
-    tsne=TSNE()
+    tsne=TSNE(perplexity=40,learning_rate=200,init='pca')
     Y=tsne.fit_transform(x)
     fig, ax = plt.subplots()
-    ax.scatter(Y[:mid,0],Y[:mid,1],20,c='r',alpha=0.3, edgecolors='none',label='real expression')
-    ax.scatter(Y[mid:,0],Y[mid:,1],20,c='b', alpha=0.3, edgecolors='none',label='reconstruct expression')
-    # ax.grid(True)
+    ax.scatter(Y[:mid,0],Y[:mid,1],s=50,c='r',alpha=0.5, edgecolors='none',label='real expression')
+    ax.scatter(Y[mid:,0],Y[mid:,1],s=50,c='b', alpha=0.5, edgecolors='none',label='reconstruct expression')
+    # ax.grid('off')
+    ax.set_xticks([])
+    ax.set_yticks([])
     ax.legend(loc='upper right')
     fig.tight_layout()
     plt.savefig(os.path.join(path,filename),dpi=300)
@@ -64,9 +66,11 @@ def plot_umap(path,x,filename):
 
     Y=reducer.fit_transform(x)
     fig, ax = plt.subplots()
-    ax.scatter(Y[:mid,0],Y[:mid,1],20,c='r',alpha=0.3, edgecolors='none',label='real expression')
-    ax.scatter(Y[mid:,0],Y[mid:,1],20,c='b', alpha=0.3, edgecolors='none',label='reconstruct expression')
-    # ax.grid(True)
+    ax.scatter(Y[:mid,0],Y[:mid,1],s=50,c='r',alpha=0.5, edgecolors='none',label='real expression')
+    ax.scatter(Y[mid:,0],Y[mid:,1],s=50,c='b', alpha=0.5, edgecolors='none',label='reconstruct expression')
+    # ax.grid('off')
+    ax.set_xticks([])
+    ax.set_yticks([])
     ax.legend(loc='upper right')
     fig.tight_layout()
     plt.savefig(os.path.join(path,filename),dpi=300)
@@ -74,5 +78,32 @@ def plot_umap(path,x,filename):
     # tsne=pd.DataFrame(tsne.embedding_,index=data_zs.index)
 
 
-
+def plot_scatter(path,x,filename):
+    mid=x.shape[0]//2
+    label_legend=['real expression','reconstruct expression' ]
+    tsne=TSNE(perplexity=40,learning_rate=200,init='pca')
+    Y_tsne=tsne.fit_transform(x)
+    
+    reducer = umap.UMAP(random_state=42)
+    Y_umap=reducer.fit_transform(x)
+    plt.figure(figsize=(10, 8))
+    fig, (ax0,ax1) = plt.subplots(1,2,figsize=(10, 5))
+    ax0.scatter(Y_tsne[:mid,0],Y_tsne[:mid,1],s=50,c='r',alpha=0.5, edgecolors='none',label='real')
+    ax0.scatter(Y_tsne[mid:,0],Y_tsne[mid:,1],s=50,c='b', alpha=0.5, edgecolors='none',label='reconstruct')
+    # ax.grid('off')
+    # ax0.set_title('TSNE')
+    ax0.set_xticks([])
+    ax0.set_yticks([])
+    
+    ax1.scatter(Y_umap[:mid,0],Y_umap[:mid,1],s=50,c='r',alpha=0.5, edgecolors='none')
+    ax1.scatter(Y_umap[mid:,0],Y_umap[mid:,1],s=50,c='b', alpha=0.5, edgecolors='none')
+    # ax.grid('off')
+    # ax1.set_title('UMAP')
+    ax1.set_xticks([])
+    ax1.set_yticks([])
+    fig.tight_layout()
+    # plt.legend(loc='lower center',bbox_to_anchor=(1, 0),ncol=2)
+    plt.savefig(os.path.join(path,filename),dpi=1000)
+    
+    plt.close()
 

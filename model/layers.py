@@ -44,6 +44,10 @@ class DownSample(nn.Module):
         downsample_out=self.ac(self.norm_layer(self.down_layer(x)))
         final_out=downsample_out.view(final_out.size(0),final_out.size(1)).contiguous()
         return final_out
+    
+    
+    
+
 
 
 class Attention(nn.Module):
@@ -57,7 +61,7 @@ class Attention(nn.Module):
         super(Attention,self).__init__()
         self.seq_length=seq_length
         # self.sample_length=sample_length
-        self.dropout=nn.Dropout(0.3)
+        self.dropout=nn.Dropout(0.2)
         self.query=nn.Linear(seq_length,seq_length)
         self.key=nn.Linear(seq_length,seq_length)
         self.value=nn.Linear(seq_length,seq_length)
@@ -67,19 +71,25 @@ class Attention(nn.Module):
     def forward(self,x):
         # b,seq_length
         b,seq=x.size()
-        q=self.query(x).view(b,-1,seq) # b,c,seq_length
-        k=self.key(x).view(b,-1,seq)  # b,c,seq_length
-        v=self.value(x).view(b,-1,seq) # b,c,seq_length
+        if b==0:
+            return x
+        else:
+            # print(self.query(x).size())
+            q=self.query(x).unsqueeze(1) # b,c,seq_length
+            k=self.key(x).unsqueeze(1)  # b,c,seq_length
+            v=self.value(x).unsqueeze(1) # b,c,seq_length
+            
+            attention=torch.bmm(q.permute(0,2,1).contiguous(),k) #b,seq,seq
+            attention=self.softmax(attention)
+            attention=self.dropout(attention)
+            
+            self_attention=torch.bmm(v,attention) #b,c,seq
+            
+            self_attention=self_attention.squeeze()
+            # print(s/
+            out=self_attention +x
+            return out
         
-        attention=torch.bmm(q.permute(0,2,1).contiguous(),k) #b,seq,seq
-        attention=self.softmax(attention)
-        attention=self.dropout(attention)
-        
-        self_attention=torch.bmm(v,attention) #b,c,seq
-        self_attention=self_attention.view(b,seq)
-
-        out=self_attention + x
-        return out
 
 
 class MultiHeadAttention(nn.Module):

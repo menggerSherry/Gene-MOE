@@ -38,12 +38,16 @@ class RMSELoss(torch.nn.Module):
         return loss
 
 def val_sample(dataloader,gen,idx,total,time_str):
+    torch.cuda.empty_cache()
     log = {'rmse': summary.AverageMeter(),'kl':summary.AverageMeter(),'r2':summary.AverageMeter(),'js':summary.AverageMeter()}
+    gen.eval()
     with torch.no_grad():
         for i,data in enumerate(dataloader):
             x=data['exp'].to(device)
             y=data['target'].to(device)
-            rec_exp,mu,var=gen(x)
+            # print(x.size())
+            # print(y.size())
+            rec_exp,mu,var,loss=gen(x)
             # target = data['target'].to(device)
             # generate=gen(noise)
             rmse = RMSELoss()(rec_exp,y)
@@ -97,23 +101,31 @@ def main(config):
     dataloader_val=dataset.get_loader(config.path,config.batch_size,'test',shuffle=True)
 
     gen = VGANCox.SAVAE(config.seq_length,config.sample_length,config.latern_dim,config.dropout)
+    # paras = list(gen.parameters())
+    # k =0
+    # for i in paras:
+    #     l = 1
+    #     for j in i.size():
+    #         l*=j
+    #     k = k+l
+    # print("total:", str(k))
     gen.train()
-
-   
+    total_num = sum(p.numel() for p in gen.parameters())
+    print("total params:",total_num)
     # logging.info(gen.encoder.attention.gamma.item())
-    prarm=list(gen.named_parameters())
+    # prarm=list(gen.named_parameters())
     # print(prarm[1][1].type())
     # print(prarm)
     gen.to(device)
     logging.info('generator arch')
-    summary.summary(gen,(config.seq_length,),'gen_1')
+    # summary.summary(gen,(config.seq_length,),'gen_1')
 
 
     dis=VGANCox.Discriminator(config.seq_length,config.sample_length)
     dis.train()
     dis=dis.to(device)
     logging.info('discriminator arch')
-    summary.summary(dis,(config.seq_length,),'dis_1')
+    # summary.summary(dis,(config.seq_length,),'dis_1')
 
 
     optimizer_G = torch.optim.Adam(gen.parameters(),
@@ -150,18 +162,26 @@ def main(config):
     idx=0
     score=val_sample(dataloader_val,gen,idx=400,total=len(dataloader_val),time_str=time_str)
     for epoch in range(config.epoch,config.n_epochs):
+        gen.train()
+        
+        dis.train()
         for i,data in enumerate(dataloader):
+            torch.cuda.empty_cache()
             exp=data['exp'].to(device)
-
+            noise = torch.normal(0,0.1,exp.size()).to(device)
+            # exp = exp+noise
             # print(exp.size())
             # print(exp)
             target = data['target'].to(device)
+            # target = target+noise
+            # print(exp.max())
+            # print(exp.min())
 
             # exp,target=aug.aug(G_aug,exp,target,config.noise_size,config.batch_size)
 
             optimizer_D.zero_grad()
              # Generate a batch of images
-            fake_imgs,mu,var = gen(exp)
+            fake_imgs,mu,var, aux_loss = gen(exp)
 
             # Real images
             real_validity = dis(target)
@@ -171,7 +191,7 @@ def main(config):
             # Gradient penalty
             gradient_penalty = compute_gradient_penalty(dis, target.data, fake_imgs.data)
             # Adversarial loss
-            d_loss = -torch.mean(real_validity) + torch.mean(fake_validity) + 10 * gradient_penalty
+            d_loss = -torch.mean(real_validity) + torch.mean(fake_validity) + 10 * gradient_penalty 
             d_loss.backward()
             optimizer_D.step()
 
@@ -185,7 +205,7 @@ def main(config):
                 # -----------------
 
                 # Generate a batch of images
-                fake_imgs,mu,var = gen(exp)
+                fake_imgs,mu,var,aux_loss = gen(exp)
                 # Loss measures generator's ability to fool the discriminator
                 # Train on fake images
                 fake_validity = dis(fake_imgs)
@@ -194,6 +214,7 @@ def main(config):
                 distance_loss=distance(fake_imgs,target)
                 g_loss+=20.0*distance_loss
                 g_loss+=10.0*KLD
+                g_loss += aux_loss
                 g_loss.backward()
                 optimizer_G.step()
 
@@ -219,7 +240,7 @@ def main(config):
 
                 )
             )
-            
+            torch.cuda.empty_cache()
             # if idx%config.sample_interval==0:   
             #     val_sample(dataloader_val,gen,idx)
             idx+=1    
@@ -275,7 +296,7 @@ if __name__=='__main__':
     parser.add_argument('--beta1', type=float, default=0.5, help='beta1')
     parser.add_argument('--beta2', type=float, default=0.999, help='beta2')
     parser.add_argument('--n_epochs', type=int, default=200, help='train epoch')
-    parser.add_argument('--batch_size', type=int, default=256, help='batch size')
+    parser.add_argument('--batch_size', type=int, default=512, help='batch size')
     parser.add_argument('--epoch', type=int, default=0, help='epoch')
     parser.add_argument('--decay_epoch', type=int, default=100, help='decay epoch')
     parser.add_argument('--checkpoints_interval', type=int, default=20, help='check')
@@ -286,7 +307,7 @@ if __name__=='__main__':
     parser.add_argument('--gp_alpha',type=float,default=10.)
     parser.add_argument('--n_critic',type=int,default=5)
     parser.add_argument('--model_path',type=str,default='SVAEpretrain')
-    parser.add_argument('--seq_length',type=int,default=20034)
+    parser.add_argument('--seq_length',type=int,default=25182)
     parser.add_argument('--noise_size',type=int,default=500)
     parser.add_argument('--hidden_size',type=int,default=1024)
     parser.add_argument('--sample_length',type=int,default=1024)

@@ -15,7 +15,7 @@ import random
 class PanDataset(Dataset):
     def __init__(self, root, mode='train', transforms_=None):
         # self.transforms = transforms.Compose(transforms_)
-        self.path=os.path.join(root,'GDC_PANCANCER.htseq_fpkm-uq_final.hdf5')
+        self.path=os.path.join(root,'GDC_PANCANCER.htseq_fpkm-uq_finalpretrain.hdf5')
         self.mode=mode
       
     # def norm(self,x):
@@ -114,27 +114,54 @@ class CoxDataset(Dataset):
     
     def __getitem__(self,index):
         
-        exp_data=self.data[index,:-1287]
-        mirna_exp_data=self.data[index,-1287:-2]
+        exp_data=self.data[index,:-2]
+        # mirna_exp_data=self.data[index,-1287:-2]
         os_event=self.data[index,-2]
         os_time=self.data[index,-1]
-        return {'exp':exp_data,'mi_exp':mirna_exp_data,'event':os_event,'time':os_time}
+        return {'exp':exp_data,'event':os_event,'time':os_time}
     def __len__(self):
         return self.data.shape[0]
+    
+    
+class ClassifyDataset(Dataset):
+    def __init__(self,root,kf,mode='train'):
+        path = os.path.join(root,'GDC_PANCANCER.classification.hdf5')
+        data_file = h5py.File(path,'r')
+        data_group = data_file['exp']
+        fold_group=data_group['cross_%d'%kf]
+        self.data=fold_group[mode][:]
+        # self.data = data_group[mode][:]
+        data_file.close()
+        self.data = torch.from_numpy(self.data)
+    def __getitem__(self,index):
+        exp_data = self.data[index,:-1]
+        cancer_class = self.data[index,-1]
+        # print('type:',cancer_class)
+        return {'exp':exp_data,'type':cancer_class}
+    def __len__(self):
+        return self.data.shape[0]
+    
+        
+        
 
-# data=CoxDataset('data_new','TCGA-BLCA',1)
-# x=data[1]
+# data=ClassifyDataset('data_new',kf=1)
+# for x in data:
+#     print(x['type'])
+# x=data[12]
 # print(x['exp'].size())
 # print(x['exp'].dtype)
+# print(x['type'])
 # print(x['mi_exp'].size())
 # print(x['mi_exp'].dtype)
 
 
-def get_loader(root, batch_size,mode, num_workers=6,kf=None,omics_type=None,dataset_type='pan',shuffle=True,drop_last=False):
+def get_loader(root, batch_size,mode, num_workers=0,kf=None,omics_type=None,dataset_type='pan',shuffle=True,drop_last=False):
     if dataset_type == 'pan':
         dataset = PanDataset(root, mode )
     elif dataset_type == 'cox':
         dataset = CoxDataset(root,omics_type,kf,mode)
+    elif dataset_type == 'classify':
+        dataset = ClassifyDataset(root,kf,mode)
     # print(len(dataset))
     dataloader = DataLoader(
         dataset,

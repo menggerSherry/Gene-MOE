@@ -1,8 +1,8 @@
-# SAVAE-Cox
+# Gene-MOE
 
-SAVAE-Cox: A novel attention-mechanism based Cox survival model by exploiting pan-cancer empirical genomic information
+Gene-MOE: A Sparsely Gated Genomic Analysis Framework exploiting Pan-Cancer data
 
-## SAVAE-Cox Architecture
+## Gene-MOE Architecture
 
 ![avatar](figures/model.png)
 
@@ -31,4 +31,10 @@ python train_encoder.py
 ## Run Survival Analysis
 ```
 python train_cox.py
+```
+
+
+## Run Cancer Classification
+```
+python train_classifer.py
 ```
