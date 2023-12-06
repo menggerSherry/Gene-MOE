@@ -22,7 +22,7 @@ conda install -c conda-forge imbalanced-learn
 conda install -c conda-forge lifelines
 ```
 
-## Run Weight Reduction
+## Run Pretraining
 
 ```
 python train_encoder.py
