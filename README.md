@@ -22,6 +22,15 @@ conda install -c conda-forge imbalanced-learn
 conda install -c conda-forge lifelines
 ```
 
+## data prepare 
+
+In this work, we mainly use the TCGA dataset from Xena. A detailed prepare process was
+
+```
+Rscript prepare.r
+python convertcsv2hdf5.py
+```
+
 ## Run Weight Reduction
 
 ```
@@ -41,4 +50,5 @@ python train_classifer.py
 
 ## dataset
 
-[Google Drive](https://drive.google.com/file/d/1c83aQyPBWK-68i5gdDGFB0JtGi2XibOD/view?usp=sharing)
+All the datasets we used in this experiment was available at [Xena](https://xenabrowser.net/datapages/)
+
