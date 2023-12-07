@@ -28,7 +28,7 @@ In this work, we mainly use the TCGA dataset from Xena. A detailed prepare proce
 
 ```
 Rscript prepare.r
-python convertcsv2hdf5.py
+python convertcsv2hdf5_new.py
 ```
 
 ## Run Weight Reduction
